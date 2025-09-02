@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Thay vendor-id / product-id của máy quét vân tay -->
+    <usb-device vendor-id="0x1234" product-id="0xABCD" />
+    <!-- Có thể khai báo nhiều thiết bị -->
+</resources>
