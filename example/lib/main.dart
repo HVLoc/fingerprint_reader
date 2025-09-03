@@ -63,22 +63,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _listenStatus() {
-    // _statusSub = reader.statusStream.listen(
-    //   (e) {
-    //     final state = e['state'];
-    //     final q = e['quality'];
-    //     final msg = e['message'];
-    //     _log(
-    //       'status → $state'
-    //       '${q != null ? ' | q=$q' : ''}'
-    //       '${msg != null ? ' | $msg' : ''}',
-    //     );
-    //     if (mounted) setState(() {});
-    //   },
-    //   onError: (err) {
-    //     _log('status error: $err');
-    //   },
-    // );
+    _statusSub = reader.statusStream.listen(
+      (e) {
+        final state = e['state'];
+        final q = e['quality'];
+        final msg = e['message'];
+        _log(
+          'status → $state'
+          '${q != null ? ' | q=$q' : ''}'
+          '${msg != null ? ' | $msg' : ''}',
+        );
+        if (mounted) setState(() {});
+      },
+      onError: (err) {
+        _log('status error: $err');
+      },
+    );
   }
 
   @override
@@ -434,34 +434,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildFABs() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FloatingActionButton.extended(
-          heroTag: 'scan',
-          onPressed: _listDevices,
-          icon: const Icon(Icons.search),
-          label: const Text('Scan devices'),
-        ),
-        const SizedBox(height: 12),
-        FloatingActionButton.extended(
-          heroTag: 'open',
-          onPressed: _open,
-          icon: const Icon(Icons.link),
-          label: const Text('Open'),
-        ),
-        const SizedBox(height: 12),
-        FloatingActionButton.extended(
-          heroTag: 'close',
-          onPressed: _close,
-          icon: const Icon(Icons.link_off),
-          label: const Text('Close'),
-        ),
-      ],
     );
   }
 }

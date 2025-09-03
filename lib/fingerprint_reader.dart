@@ -43,6 +43,6 @@ class FingerprintReader {
 
   /// Stream trạng thái từ native:
   /// ví dụ event: {state:"capturing", quality:73, message:null}
-  // Stream<Map<String, dynamic>> get statusStream =>
-  //     FingerprintReaderPlatform.instance.statusStream;
+  Stream<Map<String, dynamic>> get statusStream =>
+      FingerprintReaderPlatform.instance.statusStream;
 }

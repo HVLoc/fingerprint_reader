@@ -10,8 +10,8 @@ class MethodChannelFingerprintReader extends FingerprintReaderPlatform {
   @visibleForTesting
   final methodChannel = const MethodChannel('fingerprint_reader/methods');
 
-  // /// Event channel để nhận stream trạng thái
-  // final _eventChannel = const EventChannel('fingerprint_reader/events');
+  /// Event channel để nhận stream trạng thái
+  final _eventChannel = const EventChannel('fingerprint_reader/events');
 
   Stream<Map<String, dynamic>>? _status$;
 
@@ -68,16 +68,16 @@ class MethodChannelFingerprintReader extends FingerprintReaderPlatform {
     return methodChannel.invokeMethod<void>('cancel');
   }
 
-  // @override
-  // Stream<Map<String, dynamic>> get statusStream {
-  //   _status$ ??= _eventChannel.receiveBroadcastStream().map((e) {
-  //     // Kỳ vọng native gửi: {state:String, quality:int?, message:String?}
-  //     if (e is Map) {
-  //       return Map<String, dynamic>.from(e);
-  //     }
-  //     // Dự phòng: gói e vào message
-  //     return <String, dynamic>{'state': 'unknown', 'message': e?.toString()};
-  //   }).asBroadcastStream();
-  //   return _status$!;
-  // }
+  @override
+  Stream<Map<String, dynamic>> get statusStream {
+    _status$ ??= _eventChannel.receiveBroadcastStream().map((e) {
+      // Kỳ vọng native gửi: {state:String, quality:int?, message:String?}
+      if (e is Map) {
+        return Map<String, dynamic>.from(e);
+      }
+      // Dự phòng: gói e vào message
+      return <String, dynamic>{'state': 'unknown', 'message': e?.toString()};
+    }).asBroadcastStream();
+    return _status$!;
+  }
 }

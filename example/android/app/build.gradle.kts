@@ -42,3 +42,11 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation(files("libs/MIAXIS_Driver.aar"))
+    implementation(files("libs/FPR_220_Live.aar"))
+    implementation(files("libs/JustouchApi.aar"))
+    implementation(files("libs/MxAlgShankshake.aar"))
+
+}

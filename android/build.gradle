@@ -72,8 +72,8 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
-    compileOnly fileTree(dir: "$projectDir/vendor-libs", include: ["*.aar"])
+// dependencies {
+//     compileOnly fileTree(dir: "$projectDir/vendor-libs", include: ["*.aar"])
 
 
-}
+// }
