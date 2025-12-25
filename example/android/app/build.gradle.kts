@@ -5,6 +5,10 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val supportNFIQ2 = true
+val needDevicePower = true
+
+
 android {
     namespace = "vn.lochv.fingerprint_reader_example"
     compileSdk = 36
@@ -37,6 +41,27 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+        sourceSets {
+            getByName("main") {
+
+                // JNI libs chuẩn cho Flutter
+                jniLibs.srcDirs(
+                    "src/main/jniLibs",
+                    "libs/libcore"
+                )
+
+                if (supportNFIQ2) {
+                    jniLibs.srcDirs("libs/libnfiq2")
+                    assets.srcDirs("src/main/assets/nfiq2")
+                }
+
+                if (needDevicePower) {
+                    jniLibs.srcDirs("libs/libdevicepower")
+                }
+            }
+        }
+
 }
 
 flutter {
@@ -48,5 +73,12 @@ dependencies {
     implementation(files("libs/FPR_220_Live.aar"))
     implementation(files("libs/JustouchApi.aar"))
     implementation(files("libs/MxAlgShankshake.aar"))
-
+    implementation("com.android.support:appcompat-v7:26.1.0")
+    implementation ("com.android.support.constraint:constraint-layout:1.1.3")
+    implementation ("com.android.support:support-v4:26.1.0")
+    implementation ("com.android.support:design:26.1.0")
+    implementation(files("libs\\TrustFinger_v3.3.0.6.jar"))
+    if (needDevicePower) {
+        implementation (files("libs\\AraBMApiDev.jar"))
+    }
 }

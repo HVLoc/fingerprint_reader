@@ -1,11 +1,11 @@
 package vn.lochv.fingerprint_reader_example
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.PendingIntent
 import android.content.*
 import android.hardware.usb.UsbManager
 import android.os.Build
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import androidx.annotation.MainThread
@@ -14,7 +14,6 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-
 
 class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
 
@@ -26,17 +25,18 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     private val ctx: Context get() = this
     private val act: Activity get() = this
 
-    // ---- EventSink (được proxy ép về main) ----
+    // ---- EventSink (ép về main) ----
     @Volatile
     private var eventSink: EventChannel.EventSink? = null
 
-    // ---- Reader của bạn (thay theo SDK) ----
-    private var reader: MiaxisReader? = null
+    // ---- Router (Miaxis + TrustFinger) ----
+    private lateinit var router: FingerprintRouter
 
-    // ---- Main handler & helpers ép về main thread ----
+    // ---- Main handler ----
     private val mainHandler = Handler(Looper.getMainLooper())
     private fun onMain(block: () -> Unit) {
-        if (Looper.myLooper() == Looper.getMainLooper()) block() else mainHandler.post(block)
+        if (Looper.myLooper() == Looper.getMainLooper()) block()
+        else mainHandler.post(block)
     }
 
     private inner class MainThreadEventSink(
@@ -57,10 +57,11 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         override fun notImplemented() = onMain { delegate.notImplemented() }
     }
 
-    // ---- USB permission flow ----
+    // ---- USB permission (giữ nguyên, dùng chung) ----
     private val ACTION_USB_PERMISSION = "vn.lochv.fingerprint_reader.USB_PERMISSION"
     private var usbPermissionReceiver: BroadcastReceiver? = null
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun requestUsbPermission(
         onGranted: () -> Unit,
         onDenied: (String) -> Unit
@@ -69,7 +70,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         val devices = usb.deviceList.values.toList()
         if (devices.isEmpty()) { onDenied("NO_USB_DEVICE"); return }
 
-        val device = devices.first() // TODO: lọc theo VID/PID nếu cần
+        val device = devices.first()
         if (usb.hasPermission(device)) { onGranted(); return }
 
         val flags = if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
@@ -91,7 +92,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
         usb.requestPermission(device, pi)
     }
 
-    // ---- Emit trạng thái qua EventChannel ----
+    // ---- Emit status ----
     @MainThread
     private fun emitStatus(state: String, quality: Int? = null, message: String? = null) {
         val payload = mapOf(
@@ -99,51 +100,46 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
             "quality" to quality,
             "message" to message
         )
-        eventSink?.success(payload) // đã qua proxy main-thread
+        eventSink?.success(payload)
     }
 
     // ---- Lifecycle ----
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
-        // Tạo channels từ binaryMessenger của engine
-        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "fingerprint_reader/methods")
-        eventChannel = EventChannel(flutterEngine.dartExecutor.binaryMessenger, "fingerprint_reader/events")
+        methodChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "fingerprint_reader/methods"
+        )
+        eventChannel = EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "fingerprint_reader/events"
+        )
 
-        // StreamHandler cho EventChannel (this)
         eventChannel.setStreamHandler(this)
 
-        // Khởi tạo reader & callback state → emitStatus
-        reader = MiaxisReader(ctx) { state, quality, message ->
-            emitStatus(state, quality, message)
-        }.apply {
-            bindActivity(this@MainActivity)   // truyền Activity thay vì ActivityPluginBinding
-        }
+        // ✅ Router dùng cho cả 2 SDK
+        router = FingerprintRouter(ctx, ::emitStatus)
 
-        // Đăng ký xử lý MethodChannel
-        methodChannel.setMethodCallHandler { call: MethodCall, raw: MethodChannel.Result ->
+        methodChannel.setMethodCallHandler { call: MethodCall, raw ->
             val result = MainThreadResult(raw)
-            when (call.method) {
-                "getPlatformVersion" -> result.success("Android ${Build.VERSION.RELEASE}")
 
-                "listDevices" -> result.success(
-                    listOf(mapOf("id" to "Miaxis-USB-0", "name" to "Miaxis FPR", "type" to "USB"))
-                )
+            when (call.method) {
+
+                "getPlatformVersion" ->
+                    result.success("Android ${Build.VERSION.RELEASE}")
+
+                "listDevices" ->
+                    result.success(router.listDevices())
 
                 "open" -> {
                     requestUsbPermission(
                         onGranted = {
-                            reader?.open(
+                            router.open(
                                 call.argument<String>("deviceId"),
-                                onOk = {
-                                    emitStatus("idle", null, "opened")
-                                    result.success(true)
-                                },
-                                onErr = { code, msg ->
-                                    emitStatus("error", null, msg)
-                                    result.error(code, msg, null)
-                                }
-                            ) ?: result.error("NO_READER", "Reader is null", null)
+                                { result.success(true) },
+                                { c, m -> result.error(c, m, null) }
+                            )
                         },
                         onDenied = { why ->
                             emitStatus("error", null, why)
@@ -153,38 +149,37 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                 }
 
                 "close" -> {
-                    reader?.close()
+                    router.close()
                     emitStatus("idle", null, "closed")
                     result.success(null)
                 }
 
+                "cancel" -> {
+                    router.cancel()
+                    emitStatus("idle", null, "cancelled")
+                    result.success(null)
+                }
+
                 "capture" -> {
-                    val mode = call.argument<String>("mode") ?: "iso19794_2"
-                    val timeoutMs = call.argument<Int>("timeoutMs")
-                    emitStatus("capturing", null, "start")
-                    reader?.capture(
-                        mode, timeoutMs,
-                        onOk = { bytes, quality ->
-                            emitStatus("done", quality, null)
+                    router.capture(
+                        call.argument<String>("mode") ?: "iso19794_2",
+                        call.argument<String>("finger") ?: "RightThumb",
+                        call.argument<Int>("timeoutMs"),
+                        call.argument<Int>("qualityThreshold") ?: 50,
+                        { bytes, q ->
+                            emitStatus("done", q, null)
                             result.success(
                                 mapOf(
-                                    "mode" to mode,
                                     "bytes" to bytes.toList(),
-                                    "quality" to (quality ?: -1)
+                                    "quality" to q
                                 )
                             )
                         },
-                        onErr = { code, msg ->
-                            emitStatus("error", null, msg)
-                            result.error(code, msg, null)
+                        { c, m ->
+                            emitStatus("error", null, m)
+                            result.error(c, m, null)
                         }
-                    ) ?: result.error("NO_READER", "Reader is null", null)
-                }
-
-                "cancel" -> {
-                    reader?.cancel()
-                    emitStatus("idle", null, "cancelled")
-                    result.success(null)
+                    )
                 }
 
                 else -> result.notImplemented()
@@ -201,17 +196,14 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
 
         try { usbPermissionReceiver?.let { unregisterReceiver(it) } } catch (_: Throwable) {}
         usbPermissionReceiver = null
-
-        reader?.unbindActivity()
-        reader = null
         eventSink = null
     }
 
-    // ==== EventChannel.StreamHandler ====
+    // ---- EventChannel.StreamHandler ----
     override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
-        // bọc proxy ép về main ngay tại nguồn
         eventSink = MainThreadEventSink(events)
     }
+
     override fun onCancel(arguments: Any?) {
         eventSink = null
     }

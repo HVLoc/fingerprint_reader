@@ -22,7 +22,7 @@ internal class MiaxisReader(
     private val ctx: Context,
     // emit chỉ là callback lên Plugin; Plugin sẽ phát EventChannel
     private val emit: (state: String, quality: Int?, message: String?) -> Unit
-) {
+)  : FingerprintReaderBackend {
     // Thread pools
     private val io: ExecutorService = Executors.newSingleThreadExecutor()
     private val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
@@ -58,7 +58,7 @@ internal class MiaxisReader(
         this.activity = null
     }
 
-    fun open(deviceId: String?, onOk: () -> Unit, onErr: (String, String?) -> Unit) {
+    override fun open(deviceId: String?, onOk: () -> Unit, onErr: (String, String?) -> Unit) {
         io.execute {
             try {
                 if (fingerApi == null) {
@@ -84,7 +84,7 @@ internal class MiaxisReader(
         }
     }
 
-    fun close() {
+    override fun close() {
         // Hủy capture đang chạy trước khi đóng
         cancel()
         io.execute {
@@ -94,7 +94,7 @@ internal class MiaxisReader(
         }
     }
 
-    fun cancel() {
+    override fun cancel() {
         currentCapture.getAndSet(null)?.cancel(true)
         emitOnMain("idle", null, "cancelled")
     }
@@ -104,7 +104,7 @@ internal class MiaxisReader(
      *  "image"      -> trả PNG bytes từ ảnh cảm biến
      *  "iso19794_2" / "ansi378" / "miaxis" -> trả template bytes
      */
-    fun capture(
+    override fun capture(
         mode: String,
         timeoutMs: Int?,
         onOk: (ByteArray, Int?) -> Unit,
