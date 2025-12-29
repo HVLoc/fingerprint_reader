@@ -41,14 +41,24 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
     sourceSets {
         getByName("main") {
+
+            // JNI libs chuẩn cho Flutter
             jniLibs.srcDirs(
-                "src/main/jniLibs"
+                "src/main/jniLibs",
+                "libs/libcore"
             )
-            assets.srcDirs(
-                "src/main/assets"
-            )
+
+            if (supportNFIQ2) {
+                jniLibs.srcDirs("libs/libnfiq2")
+                assets.srcDirs("src/main/assets/nfiq2")
+            }
+
+            if (needDevicePower) {
+                jniLibs.srcDirs("libs/libdevicepower")
+            }
         }
     }
 
