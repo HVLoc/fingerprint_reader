@@ -182,6 +182,11 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                     )
                 }
 
+                "getDeviceSerial" -> {
+                    val serial = getSerialFromSystem()
+                    result.success(serial)
+                }
+
                 else -> result.notImplemented()
             }
         }
@@ -207,4 +212,15 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
     override fun onCancel(arguments: Any?) {
         eventSink = null
     }
+
+    fun getSerialFromSystem(): String {
+        return try {
+            val c = Class.forName("android.os.SystemProperties")
+            val get = c.getMethod("get", String::class.java)
+            get.invoke(null, "ro.serialno") as String
+        } catch (e: Exception) {
+            "UNKNOWN"
+        }
+    }
+
 }

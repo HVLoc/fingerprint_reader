@@ -69,6 +69,12 @@ class MethodChannelFingerprintReader extends FingerprintReaderPlatform {
   }
 
   @override
+  Future<String> getDeviceSerial() async {
+    final serial = await methodChannel.invokeMethod<String>('getDeviceSerial');
+    return serial ?? 'UNKNOWN';
+  }
+
+  @override
   Stream<Map<String, dynamic>> get statusStream {
     _status$ ??= _eventChannel.receiveBroadcastStream().map((e) {
       // Kỳ vọng native gửi: {state:String, quality:int?, message:String?}

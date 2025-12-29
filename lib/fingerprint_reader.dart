@@ -41,6 +41,10 @@ class FingerprintReader {
     return FingerprintReaderPlatform.instance.cancel();
   }
 
+  Future<String> getDeviceSerial() {
+    return FingerprintReaderPlatform.instance.getDeviceSerial();
+  }
+
   /// Stream trạng thái từ native:
   /// ví dụ event: {state:"capturing", quality:73, message:null}
   Stream<Map<String, dynamic>> get statusStream =>
