@@ -15,18 +15,7 @@ class FingerprintRouter(
     fun listDevices(): List<Map<String, String>> {
         val devices = mutableListOf<Map<String, String>>()
 
-        // --- Miaxis ---
-        try {
-            devices.addAll(
-                listOf(
-                    mapOf(
-                        "id" to "miaxis-0",
-                        "name" to "Miaxis Fingerprint",
-                        "backend" to "miaxis"
-                    )
-                )
-            )
-        } catch (_: Throwable) {}
+
 
         // --- TrustFinger ---
         try {
@@ -51,6 +40,19 @@ class FingerprintRouter(
         } catch (e: Throwable) {
             emit("warning", null, "TrustFinger error: ${e.message}")
         }
+
+        // --- Miaxis ---
+        try {
+            devices.addAll(
+                listOf(
+                    mapOf(
+                        "id" to "miaxis-0",
+                        "name" to "Miaxis Fingerprint",
+                        "backend" to "miaxis"
+                    )
+                )
+            )
+        } catch (_: Throwable) {}
 
         return devices
     }

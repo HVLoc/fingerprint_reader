@@ -162,7 +162,7 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
 
                 "capture" -> {
                     router.capture(
-                        call.argument<String>("mode") ?: "iso19794_2",
+                        call.argument<String>("mode") ?: "image",
                         call.argument<String>("finger") ?: "RightThumb",
                         call.argument<Int>("timeoutMs"),
                         call.argument<Int>("qualityThreshold") ?: 50,
