@@ -187,6 +187,10 @@ class MainActivity : FlutterActivity(), EventChannel.StreamHandler {
                     result.success(null)
                 }
 
+                "getDeviceSerial" -> {
+                    result.success(getSerialFromSystem())
+                }
+
                 else -> result.notImplemented()
             }
         }
