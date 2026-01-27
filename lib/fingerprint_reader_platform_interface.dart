@@ -58,6 +58,10 @@ abstract class FingerprintReaderPlatform extends PlatformInterface {
     throw UnimplementedError('cancel() has not been implemented.');
   }
 
+  Future<String> getDeviceSerial() {
+    throw UnimplementedError('getDeviceSerial() has not been implemented.');
+  }
+
   /// Stream trạng thái từ native
   Stream<Map<String, dynamic>> get statusStream {
     throw UnimplementedError('statusStream has not been implemented.');

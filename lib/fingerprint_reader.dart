@@ -27,7 +27,7 @@ class FingerprintReader {
   /// mode: "image" | "iso19794_2" | "ansi378" | "wsq"
   /// timeout: milliseconds (null = không timeout, do native xử lý)
   Future<Map<String, dynamic>> capture({
-    String mode = 'iso19794_2',
+    String mode = 'image',
     int? timeoutMs,
   }) {
     return FingerprintReaderPlatform.instance.capture(
@@ -39,6 +39,10 @@ class FingerprintReader {
   /// Hủy thao tác quét hiện tại nếu đang chạy
   Future<void> cancel() {
     return FingerprintReaderPlatform.instance.cancel();
+  }
+
+  Future<String> getDeviceSerial() {
+    return FingerprintReaderPlatform.instance.getDeviceSerial();
   }
 
   /// Stream trạng thái từ native:
