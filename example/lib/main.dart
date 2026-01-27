@@ -60,6 +60,8 @@ class _HomePageState extends State<HomePage> {
   Future<void> _initVersionLog() async {
     final ver = await reader.getPlatformVersion();
     _log('Platform: $ver');
+    final serial = await reader.getDeviceSerial();
+    _log('Device serial: $serial');
   }
 
   void _listenStatus() {
